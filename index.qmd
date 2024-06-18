@@ -1,0 +1,56 @@
+---
+title: "Median Income in Florida"
+execute: 
+  echo: false
+---
+
+```{r}
+#| message: false
+library(tidycensus)
+library(tidyverse)
+library(tigris)
+library(sf)
+```
+
+```{r}
+#| message: false
+census_api_key("952c62727689fe8d4a2b8589b8694a9f11140c95",  overwrite = TRUE)
+```
+
+```{r}
+#| message: false
+# Suppress unnecessary messages
+options(tigris_use_cache = TRUE)
+options(tidyverse.quiet = TRUE)
+
+# Get median income data for counties in Florida
+florida_county_income <- get_acs(
+  geography = "county",
+  variables = "B19013_001",  # This is the variable for median household income
+  state = "FL",
+  year = 2020,
+  survey = "acs5",  # 5-year ACS data
+)
+# Get the spatial data for counties in Florida
+florida_counties <- tigris::counties(state = "FL", class = "sf", year = 2020)
+
+# Merge the income data with the spatial data
+florida_county_income <- florida_county_income %>%
+  rename(GEOID = GEOID) %>%
+  left_join(florida_counties, by = "GEOID")
+
+# Plot the data
+ggplot(data = florida_county_income) +
+  geom_sf(aes(geometry = geometry,fill = estimate), color = NA) +
+  scale_fill_viridis_c(option = "viridis", name = "Median Income") +
+  theme_minimal() +
+  labs(
+    title = "Median Household Income by County in Florida",
+    caption = "Source: ACS 5-year Estimates (2020)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.position = "right"
+  )
+```
+
